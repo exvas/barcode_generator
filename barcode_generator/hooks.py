@@ -45,8 +45,8 @@ app_license = "mit"
 # application home page (will override Website Settings)
 # home_page = "login"
 # Installation hooks - ADD THESE LINES
-before_install = "barcode_generator.install.before_install"
-after_install = "barcode_generator.install.after_install"
+before_install = "barcode_generator.install_deps.before_install"
+after_install = "barcode_generator.install_deps.after_install"
 # website user home page (by Role)
 # role_home_page = {
 # 	"Student": "student",

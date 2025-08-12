@@ -1,82 +1,64 @@
-"""
-Auto-installer for barcode_generator Frappe app
-File location: barcode_generator/barcode_generator/install.py
-"""
+# ========================================
+# STEP 1: Create this file: barcode_generator/barcode_generator/install.py
+# ========================================
 
 import subprocess
 import sys
 import importlib.util
 
 def before_install():
-    """Install required packages BEFORE app installation"""
-    print("🔧 Installing required packages for Barcode Generator...")
+    """Install packages BEFORE app installation"""
+    print("🔧 Auto-installing barcode packages...")
     
-    required_packages = [
+    packages_to_install = [
         "reportlab>=4.0.4",
         "python-barcode>=0.15.1", 
         "Pillow>=10.2.0",
         "qrcode>=7.4.2"
     ]
     
-    # Check what's missing
-    missing_packages = []
-    package_check_names = {
-        "reportlab": "reportlab",
-        "python-barcode": "barcode",
-        "Pillow": "PIL", 
-        "qrcode": "qrcode"
-    }
-    
-    for package_spec in required_packages:
-        package_name = package_spec.split(">=")[0]
-        check_name = package_check_names.get(package_name, package_name)
+    # Check and install packages
+    for package in packages_to_install:
+        package_name = package.split(">=")[0]
+        check_name = {
+            "reportlab": "reportlab",
+            "python-barcode": "barcode",
+            "Pillow": "PIL", 
+            "qrcode": "qrcode"
+        }.get(package_name, package_name)
         
         try:
             importlib.import_module(check_name)
             print(f"✅ {package_name} - already installed")
         except ImportError:
-            print(f"❌ {package_name} - missing, will install")
-            missing_packages.append(package_spec)
-    
-    # Install missing packages
-    if missing_packages:
-        try:
-            print(f"📦 Installing {len(missing_packages)} packages...")
-            
-            for package in missing_packages:
-                package_name = package.split(">=")[0]
-                print(f"Installing {package_name}...", end=" ")
-                
-                result = subprocess.run([
+            print(f"📦 Installing {package_name}...")
+            try:
+                subprocess.run([
                     sys.executable, "-m", "pip", "install", package
-                ], capture_output=True, text=True, check=True)
-                
-                print("✅")
-            
-            print("✅ All packages installed successfully!")
-            
-        except subprocess.CalledProcessError as e:
-            print("❌")
-            print(f"Failed to install packages: {e.stderr}")
-            print("Manual installation required:")
-            for pkg in missing_packages:
-                print(f"  pip install {pkg}")
-            # Don't fail the installation, just warn
-            return
-    else:
-        print("✅ All required packages are already installed!")
+                ], check=True, capture_output=True, text=True)
+                print(f"✅ {package_name} installed successfully")
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to install {package_name}: {e}")
+    
+    print("✅ Package installation completed!")
 
 def after_install():
     """Called after app installation"""
     print("✅ Barcode Generator app installed successfully!")
-    
-    # Verify packages are working
-    try:
-        import reportlab
-        import barcode
-        import PIL
-        import qrcode
-        print("✅ All barcode packages verified and working!")
-    except ImportError as e:
-        print(f"⚠️  Warning: Package verification failed: {e}")
-        print("You may need to restart your bench or install packages manually:")
+
+# ========================================
+# STEP 2: Fix your hooks.py file - CHANGE THIS LINE:
+# ========================================
+
+# In your barcode_generator/barcode_generator/hooks.py file
+# FIND this line:
+# before_install = "barcode_generator.install_deps.before_install"
+
+# CHANGE it to:
+# before_install = "barcode_generator.install.before_install"
+
+# AND FIND this line:
+# after_install = "barcode_generator.install_deps.after_install"
+
+# CHANGE it to:
+# after_install = "barcode_generator.install.after_install"
