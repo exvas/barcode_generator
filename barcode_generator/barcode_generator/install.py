@@ -1,17 +1,14 @@
 """
 Auto-installer for barcode_generator Frappe app
-Create this file: barcode_generator/install.py
-This runs BEFORE the app installs to the site
+File location: barcode_generator/barcode_generator/install.py
 """
 
 import subprocess
 import sys
 import importlib.util
-import frappe
-from frappe import _
 
 def before_install():
-    """Called BEFORE app installation - auto-install packages here"""
+    """Install required packages BEFORE app installation"""
     print("🔧 Installing required packages for Barcode Generator...")
     
     required_packages = [
@@ -57,7 +54,6 @@ def before_install():
                 print("✅")
             
             print("✅ All packages installed successfully!")
-            return True
             
         except subprocess.CalledProcessError as e:
             print("❌")
@@ -65,10 +61,10 @@ def before_install():
             print("Manual installation required:")
             for pkg in missing_packages:
                 print(f"  pip install {pkg}")
-            return False
+            # Don't fail the installation, just warn
+            return
     else:
         print("✅ All required packages are already installed!")
-        return True
 
 def after_install():
     """Called after app installation"""
@@ -83,4 +79,4 @@ def after_install():
         print("✅ All barcode packages verified and working!")
     except ImportError as e:
         print(f"⚠️  Warning: Package verification failed: {e}")
-        print("You may need to restart your bench.")
+        print("You may need to restart your bench or install packages manually:")
