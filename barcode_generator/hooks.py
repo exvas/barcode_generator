@@ -1,3 +1,5 @@
+# Before install hook to validate and install dependencies
+before_install = "barcode_generator.install_deps.install_barcode_dependencies"
 app_name = "barcode_generator"
 app_title = "Barcode Generator"
 app_publisher = "sammish"

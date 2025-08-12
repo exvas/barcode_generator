@@ -1,0 +1,4 @@
+reportlab>=4.0.4
+python-barcode>=0.15.1
+Pillow>=10.2.0
+qrcode>=7.4.2
