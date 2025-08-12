@@ -124,9 +124,9 @@
    "fieldname": "barcode_width",
    "fieldtype": "Float",
    "label": "Barcode Width (mm)",
-   "default": 37,
+   "default": 50,
    "precision": 1,
-   "description": "Standard Code128 width is 37mm"
+   "description": "Optimized width for A4 paper (50mm)"
   },
   {
    "fieldname": "column_break_8",
@@ -136,9 +136,9 @@
    "fieldname": "barcode_height",
    "fieldtype": "Float",
    "label": "Barcode Height (mm)",
-   "default": 18,
+   "default": 25,
    "precision": 1,
-   "description": "Standard barcode height including text space"
+   "description": "Optimized height for A4 paper including text space"
   },
   {
    "fieldname": "column_break_9",
@@ -148,8 +148,8 @@
    "fieldname": "item_name_font_size",
    "fieldtype": "Int",
    "label": "Item Name Font Size (pt)",
-   "default": 12,
-   "description": "Font size for item names (8-16 recommended)"
+   "default": 24,
+   "description": "Font size for item names (18-28 recommended for A4)"
   },
   {
    "fieldname": "section_break_9",

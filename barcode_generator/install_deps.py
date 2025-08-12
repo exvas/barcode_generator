@@ -4,8 +4,8 @@ import sys
 
 def install_barcode_dependencies():
     """
-    Validate and install required packages before app installation.
-    Checks if packages are already installed, installs missing ones.
+    Validate and install required packages.
+    This function can be called manually or as a hook.
     """
     # Get the correct path to requirements.txt - it's in the app root
     app_path = os.path.dirname(os.path.dirname(__file__))  # Go up two levels from install_deps.py
@@ -21,6 +21,8 @@ def install_barcode_dependencies():
             print(f"[Barcode Generator] Found requirements.txt at: {req_path}")
         else:
             print(f"[Barcode Generator] Alternative path also not found: {alt_req_path}")
+            # Try installing manually with known requirements
+            install_known_requirements()
             return
     
     print("[Barcode Generator] Validating dependencies...")
@@ -32,6 +34,7 @@ def install_barcode_dependencies():
         print(f"[Barcode Generator] Found {len(requirements)} requirements: {requirements}")
     except Exception as e:
         print(f"[Barcode Generator] Failed to read requirements: {e}")
+        install_known_requirements()
         return
     
     # Check which packages are missing
@@ -63,3 +66,24 @@ def install_barcode_dependencies():
             raise
     else:
         print("[Barcode Generator] ✅ All dependencies already satisfied")
+
+def install_known_requirements():
+    """Install known requirements if requirements.txt is not found"""
+    known_requirements = [
+        "reportlab>=4.0.4",
+        "python-barcode>=0.15.1", 
+        "Pillow>=10.2.0",
+        "qrcode>=7.4.2"
+    ]
+    
+    print("[Barcode Generator] Installing known requirements...")
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + known_requirements)
+        print("[Barcode Generator] ✅ Known requirements installed successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"[Barcode Generator] ❌ Failed to install known requirements: {e}")
+        raise
+
+if __name__ == "__main__":
+    # Allow running this script directly
+    install_barcode_dependencies()

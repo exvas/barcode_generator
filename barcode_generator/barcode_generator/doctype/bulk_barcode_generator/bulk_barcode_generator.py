@@ -120,13 +120,13 @@ class BulkBarcodeGenerator(Document):
                 # For standard barcodes
                 barcode_class = barcode_classes[self.barcode_type]
                 
-                # Create barcode with standard optimized options
+                # Create barcode with larger options for A4 paper
                 options = {
-                    'module_width': 0.33,  # Standard module width in mm (0.33mm is common)
-                    'module_height': 10.0,  # Reduced height for bars only
-                    'quiet_zone': 3.0,      # Reduced quiet zone for compact layout
-                    'font_size': 8,         # Standard font size for readability
-                    'text_distance': 3.0,   # More space between bars and text
+                    'module_width': 0.5,    # Increased module width for A4 (0.5mm)
+                    'module_height': 15.0,  # Increased height for better visibility
+                    'quiet_zone': 6.0,      # Increased quiet zone for better scanning
+                    'font_size': 18,        # Much larger font size for A4 readability
+                    'text_distance': 8.0,   # More space between bars and text
                     'background': 'white',
                     'foreground': 'black',
                     'write_text': self.include_text,  # Control text display
@@ -188,12 +188,12 @@ class BulkBarcodeGenerator(Document):
             if not (item_name and item_name.strip()):
                 return img
                 
-            extra_height = 35  # More space for larger font
+            extra_height = 60  # Increased space for much larger font (24pt)
             new_height = img.height + extra_height
             new_img = Image.new('RGB', (img.width, new_height), 'white')
             
             # Position the barcode image (leave more space at top for larger item name)
-            barcode_y = 35
+            barcode_y = 60
             new_img.paste(img, (0, barcode_y))
             
             # Add item name text
@@ -201,7 +201,7 @@ class BulkBarcodeGenerator(Document):
             
             # Try to use larger font with configurable size
             try:
-                font_size = self.item_name_font_size or 12  # Default to 12pt
+                font_size = self.item_name_font_size or 24  # Increased default to 24pt for A4
                 # Try to load TrueType font if available
                 try:
                     # Try common system font paths
@@ -234,8 +234,8 @@ class BulkBarcodeGenerator(Document):
                 text_width = text_bbox[2] - text_bbox[0]
                 text_x = max(0, (img.width - text_width) // 2)
                 
-                # Draw item name with larger font
-                draw.text((text_x, 8), display_name, fill='black', font=item_font)
+                # Draw item name with larger font and more top margin
+                draw.text((text_x, 12), display_name, fill='black', font=item_font)
             
             return new_img
         except Exception as e:
@@ -342,7 +342,7 @@ class BulkBarcodeGenerator(Document):
             
             # Optimized spacing for standard layout
             x_spacing = available_width / codes_per_row
-            y_spacing = item_height + (8 * mm)  # Reduced vertical spacing
+            y_spacing = item_height + (20 * mm)  # Increased vertical spacing for larger barcodes
             
             codes_per_page = int(available_height / y_spacing) * codes_per_row
             
