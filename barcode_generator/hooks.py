@@ -1,5 +1,4 @@
 # After install hook to ensure dependencies are available
-after_install = "barcode_generator.install_deps.install_barcode_dependencies"
 app_name = "barcode_generator"
 app_title = "Barcode Generator"
 app_publisher = "sammish"
@@ -45,7 +44,9 @@ app_license = "mit"
 
 # application home page (will override Website Settings)
 # home_page = "login"
-
+# Installation hooks - ADD THESE LINES
+before_install = "barcode_generator.install.before_install"
+after_install = "barcode_generator.install.after_install"
 # website user home page (by Role)
 # role_home_page = {
 # 	"Student": "student",
