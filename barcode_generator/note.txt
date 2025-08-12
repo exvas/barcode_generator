@@ -1,2 +1,4 @@
 chmod +x install_barcode_packages.sh
 ./install_barcode_packages.sh
+
+rm -f install_barcode_packages.sh
