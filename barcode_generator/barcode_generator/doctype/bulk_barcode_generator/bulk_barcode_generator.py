@@ -201,7 +201,7 @@ class BulkBarcodeGenerator(Document):
             
             # Try to use larger font with configurable size
             try:
-                font_size = self.item_name_font_size or 16  # Default to 12pt
+                font_size = self.item_name_font_size or 12  # Default to 12pt
                 # Try to load TrueType font if available
                 try:
                     # Try common system font paths
