@@ -69,11 +69,8 @@ app_license = "mit"
 # Installation
 # ------------
 
-# Install dependencies before app installation
-before_install = "barcode_generator.install_deps.before_install"
-
-# Run after app installation
-after_install = "barcode_generator.install_deps.after_install"
+# before_install = "barcode_generator.install.before_install"
+# after_install = "barcode_generator.install.after_install"
 
 # Uninstallation
 # ------------
