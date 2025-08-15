@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2025-01-01 12:00:00.000000",
+ "creation": "2025-01-01 12:00:00",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -61,10 +61,10 @@
    "label": "Input Data"
   },
   {
+   "description": "Enter each code or number on a separate line",
    "fieldname": "input_data",
    "fieldtype": "Long Text",
    "label": "Codes/Numbers (One per line)",
-   "description": "Enter each code or number on a separate line",
    "reqd": 1
   },
   {
@@ -73,11 +73,11 @@
    "label": "Barcode Settings"
   },
   {
+   "default": "Code128",
    "fieldname": "barcode_type",
    "fieldtype": "Select",
    "label": "Barcode Type",
    "options": "Code128\nCode39\nEAN13\nEAN8\nUPC-A\nITF\nDataMatrix\nPDF417",
-   "default": "Code128",
    "reqd": 1
   },
   {
@@ -85,11 +85,11 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "A4",
    "fieldname": "page_size",
    "fieldtype": "Select",
    "label": "Page Size",
-   "options": "A4\nLetter\nA3\nA5\nLegal",
-   "default": "A4",
+   "options": "A4\nLetter\nA3\nA5\nLegal\n50x25mm Label",
    "reqd": 1
   },
   {
@@ -98,22 +98,22 @@
    "label": "Layout Configuration"
   },
   {
+   "default": "3",
+   "description": "Number of barcodes to display in each row",
    "fieldname": "codes_per_row",
    "fieldtype": "Int",
-   "label": "Codes Per Row",
-   "default": 3,
-   "description": "Number of barcodes to display in each row"
+   "label": "Codes Per Row"
   },
   {
    "fieldname": "column_break_6",
    "fieldtype": "Column Break"
   },
   {
+   "default": "1",
+   "description": "Show the code text below each barcode",
    "fieldname": "include_text",
    "fieldtype": "Check",
-   "label": "Include Text Below Barcode",
-   "default": 1,
-   "description": "Show the code text below each barcode"
+   "label": "Include Text Below Barcode"
   },
   {
    "fieldname": "section_break_7",
@@ -121,35 +121,35 @@
    "label": "Barcode Dimensions"
   },
   {
+   "default": "50",
+   "description": "Optimized width for A4 paper (50mm)",
    "fieldname": "barcode_width",
    "fieldtype": "Float",
    "label": "Barcode Width (mm)",
-   "default": 50,
-   "precision": 1,
-   "description": "Optimized width for A4 paper (50mm)"
+   "precision": "1"
   },
   {
    "fieldname": "column_break_8",
    "fieldtype": "Column Break"
   },
   {
+   "default": "25",
+   "description": "Optimized height for A4 paper including text space",
    "fieldname": "barcode_height",
    "fieldtype": "Float",
    "label": "Barcode Height (mm)",
-   "default": 25,
-   "precision": 1,
-   "description": "Optimized height for A4 paper including text space"
+   "precision": "1"
   },
   {
    "fieldname": "column_break_9",
    "fieldtype": "Column Break"
   },
   {
+   "default": "24",
+   "description": "Font size for item names (18-28 recommended for A4)",
    "fieldname": "item_name_font_size",
    "fieldtype": "Int",
-   "label": "Item Name Font Size (pt)",
-   "default": 24,
-   "description": "Font size for item names (18-28 recommended for A4)"
+   "label": "Item Name Font Size (pt)"
   },
   {
    "fieldname": "section_break_9",
@@ -167,13 +167,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Draft",
    "fieldname": "generation_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Generation Status",
    "options": "Draft\nIn Progress\nCompleted\nFailed",
-   "default": "Draft",
-   "read_only": 1,
-   "in_list_view": 1
+   "read_only": 1
   },
   {
    "fieldname": "section_break_11",
@@ -181,11 +181,11 @@
    "label": "Statistics"
   },
   {
+   "description": "Total number of codes processed",
    "fieldname": "total_codes",
    "fieldtype": "Int",
    "label": "Total Codes",
-   "read_only": 1,
-   "description": "Total number of codes processed"
+   "read_only": 1
   },
   {
    "fieldname": "column_break_12",
@@ -199,9 +199,8 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "is_submittable": 0,
  "links": [],
- "modified": "2025-01-01 12:00:00.000000",
+ "modified": "2025-08-15 12:44:30.300125",
  "modified_by": "Administrator",
  "module": "Barcode Generator",
  "name": "Bulk Barcode Generator",
@@ -244,6 +243,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

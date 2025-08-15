@@ -99,7 +99,8 @@ class BulkBarcodeGenerator(Document):
             'Letter': letter,
             'A3': A3,
             'A5': A5,
-            'Legal': legal
+            'Legal': legal,
+            '50x25mm Label': (50 * mm, 25 * mm)  # Thermal label size
         }
         return page_sizes.get(self.page_size, A4)
 
@@ -120,17 +121,31 @@ class BulkBarcodeGenerator(Document):
                 # For standard barcodes
                 barcode_class = barcode_classes[self.barcode_type]
                 
-                # Create barcode with larger options for A4 paper
-                options = {
-                    'module_width': 0.5,    # Increased module width for A4 (0.5mm)
-                    'module_height': 15.0,  # Increased height for better visibility
-                    'quiet_zone': 6.0,      # Increased quiet zone for better scanning
-                    'font_size': 18,        # Much larger font size for A4 readability
-                    'text_distance': 8.0,   # More space between bars and text
-                    'background': 'white',
-                    'foreground': 'black',
-                    'write_text': self.include_text,  # Control text display
-                }
+                # Different options for thermal vs standard printing
+                if self.page_size == '50x25mm Label':
+                    # Thermal label optimized settings
+                    options = {
+                        'module_width': 0.25,   # Even smaller modules for thermal labels
+                        'module_height': 6.0,   # Compact height for thermal
+                        'quiet_zone': 1.5,     # Minimal quiet zone for thermal
+                        'font_size': 8,         # Smaller font for thermal labels
+                        'text_distance': 4.0,   # More space between bars and text to prevent overlap
+                        'background': 'white',
+                        'foreground': 'black',
+                        'write_text': self.include_text,  # Control text display
+                    }
+                else:
+                    # Standard paper optimized settings (A4, Letter, etc.)
+                    options = {
+                        'module_width': 0.5,    # Increased module width for A4 (0.5mm)
+                        'module_height': 15.0,  # Increased height for better visibility
+                        'quiet_zone': 6.0,      # Increased quiet zone for better scanning
+                        'font_size': 18,        # Much larger font size for A4 readability
+                        'text_distance': 8.0,   # More space between bars and text
+                        'background': 'white',
+                        'foreground': 'black',
+                        'write_text': self.include_text,  # Control text display
+                    }
                 
                 # Generate barcode
                 code_obj = barcode_class(str(code_text), writer=ImageWriter())
@@ -182,26 +197,35 @@ class BulkBarcodeGenerator(Document):
             return self.create_error_image(code_text, str(e))
 
     def add_item_name_to_image(self, img, item_name, barcode_text):
-        """Add item name above the barcode with 12pt font size"""
+        """Add item name above the barcode with appropriate font size for paper type"""
         try:
             # Only add space for item name if it exists
             if not (item_name and item_name.strip()):
                 return img
+            
+            # Different settings for thermal vs standard labels
+            if self.page_size == '50x25mm Label':
+                # Thermal label settings - more space for text
+                extra_height = 35  # More space for thermal labels to show item name clearly
+                barcode_y = 30    # Position barcode lower to make room for text above
+                font_size = self.item_name_font_size or 14  # Larger font for better visibility on thermal
+            else:
+                # Standard paper settings - large text
+                extra_height = 60  # Increased space for much larger font (24pt)
+                barcode_y = 60
+                font_size = self.item_name_font_size or 24  # Increased default to 24pt for A4
                 
-            extra_height = 60  # Increased space for much larger font (24pt)
             new_height = img.height + extra_height
             new_img = Image.new('RGB', (img.width, new_height), 'white')
             
-            # Position the barcode image (leave more space at top for larger item name)
-            barcode_y = 60
+            # Position the barcode image (leave space at top for item name)
             new_img.paste(img, (0, barcode_y))
             
             # Add item name text
             draw = ImageDraw.Draw(new_img)
             
-            # Try to use larger font with configurable size
+            # Try to use appropriate font with configurable size
             try:
-                font_size = self.item_name_font_size or 24  # Increased default to 24pt for A4
                 # Try to load TrueType font if available
                 try:
                     # Try common system font paths
@@ -227,15 +251,24 @@ class BulkBarcodeGenerator(Document):
             # Add item name at the top
             if item_name and item_name.strip():
                 # Truncate long item names to fit width
-                display_name = item_name[:35] + "..." if len(item_name) > 35 else item_name
+                max_chars = 25 if self.page_size == '50x25mm Label' else 35
+                display_name = item_name[:max_chars] + "..." if len(item_name) > max_chars else item_name
                 
                 # Calculate text position (centered)
                 text_bbox = draw.textbbox((0, 0), display_name, font=item_font)
                 text_width = text_bbox[2] - text_bbox[0]
                 text_x = max(0, (img.width - text_width) // 2)
                 
+                # Position text differently for thermal vs standard
+                if self.page_size == '50x25mm Label':
+                    # For thermal labels - text at top with more margin
+                    text_y = 5  # Close to top
+                else:
+                    # For standard labels
+                    text_y = 12
+                
                 # Draw item name with larger font and more top margin
-                draw.text((text_x, 12), display_name, fill='black', font=item_font)
+                draw.text((text_x, text_y), display_name, fill='black', font=item_font)
             
             return new_img
         except Exception as e:
@@ -265,7 +298,12 @@ class BulkBarcodeGenerator(Document):
             text_bbox = draw.textbbox((0, 0), text, font=font)
             text_width = text_bbox[2] - text_bbox[0]
             text_x = (img.width - text_width) // 2
-            text_y = img.height + 5
+            
+            # More spacing for thermal labels to prevent overlap
+            if self.page_size == '50x25mm Label':
+                text_y = img.height + 8  # More space for thermal labels
+            else:
+                text_y = img.height + 5  # Standard spacing
             
             draw.text((text_x, text_y), text, fill='black', font=font)
             
@@ -320,44 +358,83 @@ class BulkBarcodeGenerator(Document):
             c = canvas.Canvas(buffer, pagesize=page_size)
             
             page_width, page_height = page_size
-            margin = 20 * mm
             
-            # Calculate layout with standard barcode dimensions
-            codes_per_row = self.codes_per_row or 3
-            
-            # Standard barcode dimensions (optimized to prevent overlap)
-            standard_barcode_width = 37 * mm   # Standard width for Code128
-            standard_barcode_height = 18 * mm  # Increased height to accommodate text properly
-            
-            # Use custom dimensions if specified, otherwise use standards
-            barcode_width = (self.barcode_width * mm) if self.barcode_width else standard_barcode_width
-            barcode_height = (self.barcode_height * mm) if self.barcode_height else standard_barcode_height
-            
-            # Add padding for larger item name (12pt font)
-            item_height = barcode_height + (25 * mm)  # More space for larger font
-            
-            # Calculate positions with optimized spacing
-            available_width = page_width - (2 * margin)
-            available_height = page_height - (2 * margin)
-            
-            # Optimized spacing for standard layout
-            x_spacing = available_width / codes_per_row
-            y_spacing = item_height + (20 * mm)  # Increased vertical spacing for larger barcodes
-            
-            codes_per_page = int(available_height / y_spacing) * codes_per_row
+            # Handle thermal labels differently
+            if self.page_size == '50x25mm Label':
+                # For 50x25mm thermal labels - one barcode per label
+                margin = 1 * mm  # Minimal margin for thermal labels
+                codes_per_row = 1
+                codes_per_page = 1
+                
+                # Use user-specified dimensions for thermal labels
+                barcode_width = (self.barcode_width or 40) * mm   # Use form value or default 40mm
+                barcode_height = (self.barcode_height or 8) * mm  # Use form value or default 8mm
+                
+                # Calculate space needed for text based on font size
+                font_size = self.item_name_font_size or 12
+                text_space = max(6 * mm, font_size * 0.5 * mm)  # Ensure enough space for text
+                item_height = barcode_height + text_space + (2 * mm)  # Add padding
+                
+                x_spacing = page_width
+                y_spacing = page_height
+                
+            else:
+                # Standard paper sizes (A4, Letter, etc.)
+                margin = 20 * mm
+                codes_per_row = self.codes_per_row or 3
+                
+                # Standard barcode dimensions (optimized to prevent overlap)
+                standard_barcode_width = 37 * mm   # Standard width for Code128
+                standard_barcode_height = 18 * mm  # Increased height to accommodate text properly
+                
+                # Use custom dimensions if specified, otherwise use standards
+                barcode_width = (self.barcode_width * mm) if self.barcode_width else standard_barcode_width
+                barcode_height = (self.barcode_height * mm) if self.barcode_height else standard_barcode_height
+                
+                # Add padding for larger item name (12pt font)
+                item_height = barcode_height + (25 * mm)  # More space for larger font
+                
+                # Calculate positions with optimized spacing
+                available_width = page_width - (2 * margin)
+                available_height = page_height - (2 * margin)
+                
+                # Optimized spacing for standard layout
+                x_spacing = available_width / codes_per_row
+                y_spacing = item_height + (20 * mm)  # Increased vertical spacing for larger barcodes
+                
+                codes_per_page = int(available_height / y_spacing) * codes_per_row
             
             for i, (item_name, barcode_num, img) in enumerate(barcode_images):
                 # Check if we need a new page
-                if i > 0 and i % codes_per_page == 0:
-                    c.showPage()
+                if self.page_size == '50x25mm Label':
+                    # For thermal labels - each label gets its own page
+                    if i > 0:  # Start new page for every label after the first
+                        c.showPage()
+                else:
+                    # For standard paper - use grid layout
+                    if i > 0 and i % codes_per_page == 0:
+                        c.showPage()
                 
-                # Calculate position in grid with better centering
-                row = (i % codes_per_page) // codes_per_row
-                col = (i % codes_per_page) % codes_per_row
-                
-                # Center barcodes within their allocated space
-                x = margin + (col * x_spacing) + ((x_spacing - barcode_width) / 2)
-                y = page_height - margin - ((row + 1) * y_spacing) + ((y_spacing - item_height) / 2)
+                if self.page_size == '50x25mm Label':
+                    # For thermal labels - position barcode with space for text below
+                    x = (page_width - barcode_width) / 2  # Center horizontally
+                    
+                    # Position barcode in upper portion to leave space for text
+                    available_height = page_height - (2 * mm)  # Leave margins
+                    barcode_space = barcode_height
+                    text_space = max(6 * mm, (self.item_name_font_size or 12) * 0.5 * mm)
+                    
+                    # Position barcode from top, leaving space for text below
+                    y = page_height - margin - barcode_height - (2 * mm)  # From top with margin
+                else:
+                    # Standard paper positioning
+                    # Calculate position in grid with better centering
+                    row = (i % codes_per_page) // codes_per_row
+                    col = (i % codes_per_page) % codes_per_row
+                    
+                    # Center barcodes within their allocated space
+                    x = margin + (col * x_spacing) + ((x_spacing - barcode_width) / 2)
+                    y = page_height - margin - ((row + 1) * y_spacing) + ((y_spacing - item_height) / 2)
                 
                 # Draw barcode image with item name and barcode number
                 try:
