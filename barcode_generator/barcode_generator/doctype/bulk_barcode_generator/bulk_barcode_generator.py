@@ -379,28 +379,30 @@ class BulkBarcodeGenerator(Document):
                 y_spacing = page_height
                 
             else:
-                # Standard paper sizes (A4, Letter, etc.)
-                margin = 20 * mm
+                # Standard paper sizes (A4, A5, Letter, Legal) - optimized for maximum density
+                margin = 15 * mm  # Reduced margin
                 codes_per_row = self.codes_per_row or 3
                 
-                # Standard barcode dimensions (optimized to prevent overlap)
-                standard_barcode_width = 37 * mm   # Standard width for Code128
-                standard_barcode_height = 18 * mm  # Increased height to accommodate text properly
+                # Optimized barcode dimensions for standard papers
+                standard_barcode_width = 35 * mm   # Slightly smaller width for better fit
+                standard_barcode_height = 15 * mm  # Optimized height for density
                 
-                # Use custom dimensions if specified, otherwise use standards
+                # Use custom dimensions if specified, otherwise use optimized standards
                 barcode_width = (self.barcode_width * mm) if self.barcode_width else standard_barcode_width
                 barcode_height = (self.barcode_height * mm) if self.barcode_height else standard_barcode_height
                 
-                # Add padding for larger item name (12pt font)
-                item_height = barcode_height + (25 * mm)  # More space for larger font
+                # Minimal padding for maximum density - just enough for text
+                font_size = self.item_name_font_size or 24
+                text_space = max(8 * mm, font_size * 0.4 * mm)  # Minimal text space
+                item_height = barcode_height + text_space + (3 * mm)  # Minimal total height
                 
-                # Calculate positions with optimized spacing
+                # Calculate positions with minimal spacing
                 available_width = page_width - (2 * margin)
                 available_height = page_height - (2 * margin)
                 
-                # Optimized spacing for standard layout
+                # Minimal spacing for maximum density
                 x_spacing = available_width / codes_per_row
-                y_spacing = item_height + (20 * mm)  # Increased vertical spacing for larger barcodes
+                y_spacing = item_height + (5 * mm)  # Minimal vertical spacing between rows
                 
                 codes_per_page = int(available_height / y_spacing) * codes_per_row
             
