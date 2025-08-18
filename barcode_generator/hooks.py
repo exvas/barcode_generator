@@ -69,14 +69,14 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "barcode_generator.install.before_install"
-# after_install = "barcode_generator.install.after_install"
+before_install = "barcode_generator.install.before_install"
+after_install = "barcode_generator.install.after_install"
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "barcode_generator.uninstall.before_uninstall"
-# after_uninstall = "barcode_generator.uninstall.after_uninstall"
+before_uninstall = "barcode_generator.install.before_uninstall"
+after_uninstall = "barcode_generator.install.after_uninstall"
 
 # Integration Setup
 # ------------------
@@ -297,14 +297,14 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "barcode_generator.install.before_install"
-# after_install = "barcode_generator.install.after_install"
+before_install = "barcode_generator.install.before_install"
+after_install = "barcode_generator.install.after_install"
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "barcode_generator.uninstall.before_uninstall"
-# after_uninstall = "barcode_generator.uninstall.after_uninstall"
+before_uninstall = "barcode_generator.install.before_uninstall"
+after_uninstall = "barcode_generator.install.after_uninstall"
 
 # Integration Setup
 # ------------------

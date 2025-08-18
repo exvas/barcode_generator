@@ -21,44 +21,67 @@ A powerful Frappe app for generating bulk barcodes with customizable layouts, th
 
 ## 📦 Requirements
 
-**Dependencies Installation** - These packages are required for full functionality:
+**✅ AUTOMATIC INSTALLATION AVAILABLE** - Dependencies are now installed automatically!
+
+**Dependencies (Installed Automatically):**
 
 **Core Barcode Libraries:**
-```bash
-pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2
-```
+- reportlab>=4.0.4
+- python-barcode>=0.15.1
+- Pillow>=10.2.0
+- qrcode>=7.4.2
 
 **File Upload Support (CSV/Excel):**
-```bash
-pip install pandas>=1.3.0 openpyxl>=3.0.0
-```
+- pandas>=1.3.0
+- openpyxl>=3.0.0
 
 ## 🚀 Installation
 
-### Quick Installation (Recommended)
+### 🎯 Method 1: Automatic Installation (Recommended)
+
+**One-command installation with auto dependency management:**
 
 ```bash
 # Step 1: Get the app
 cd $PATH_TO_YOUR_BENCH
 bench get-app https://github.com/exvas/barcode_generator.git
 
-# Step 2: Install dependencies
-pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
-
-# Step 3: Install the app
-bench --site YOUR_SITE_NAME install-app barcode_generator
-
-# Step 4: Migrate database
-bench --site YOUR_SITE_NAME migrate
+# Step 2: Run auto-installer
+cd apps/barcode_generator
+./install_barcode_generator.sh
 ```
 
-### Alternative: Bench Environment Installation
+**Or download and run directly:**
+```bash
+cd $PATH_TO_YOUR_BENCH
+wget https://raw.githubusercontent.com/exvas/barcode_generator/main/install_barcode_generator.sh
+chmod +x install_barcode_generator.sh
+./install_barcode_generator.sh
+```
+
+### 🔧 Method 2: Manual Installation
 
 ```bash
-# Install in bench virtual environment
+# Step 1: Get the app
 cd $PATH_TO_YOUR_BENCH
-source env/bin/activate
+bench get-app https://github.com/exvas/barcode_generator.git
+
+# Step 2: Install dependencies (automatically installed when you install the app)
+bench --site YOUR_SITE_NAME install-app barcode_generator
+
+# Step 3: Dependencies are installed automatically via hooks!
+# That's it! The app will install all required packages during installation.
+```
+
+### 🛠️ Method 3: Manual Dependencies (Advanced Users)
+
+If you prefer to manage dependencies manually:
+
+```bash
+# Install dependencies first
 pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
+
+# Then install the app
 bench --site YOUR_SITE_NAME install-app barcode_generator
 ```
 
@@ -281,18 +304,31 @@ The app includes three permission levels:
 
 ### Common Issues
 
-1. **Import Error: No module named 'reportlab'**
-   - Install dependencies for your environment:
+1. **Installation Dependencies**
+   - ✅ **NEW**: Dependencies are installed automatically when you install the app!
+   - If automatic installation fails, you'll see clear error messages
+   - Fallback: Manual installation with provided commands
+
+2. **Import Error: No module named 'reportlab'**
+   - With auto-installation: This should not happen anymore
+   - Manual fix: 
    ```bash
    pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
    ```
 
-2. **File Upload Not Working**
-   - Ensure pandas and openpyxl are installed: `pip install pandas>=1.3.0 openpyxl>=3.0.0`
+3. **Automatic Installation Failed**
+   - Check the installation logs for specific error messages
+   - Ensure your bench environment has internet access
+   - Try the manual installation method as fallback
+   - Run: `bench --site YOUR_SITE install-app barcode_generator --verbose` for detailed logs
+
+4. **File Upload Not Working**
+   - Auto-installation includes pandas and openpyxl
+   - If still not working, manually install: `pip install pandas>=1.3.0 openpyxl>=3.0.0`
    - Check file format: Use CSV or Excel (.xlsx, .xls)
    - Verify file has proper headers: "Item Name", "Barcode Number"
 
-3. **AttributeError: object has no attribute 'upload_file'**
+5. **AttributeError: object has no attribute 'upload_file'**
    - Run database migration: `bench --site YOUR_SITE migrate`
    - Clear cache: `bench --site YOUR_SITE clear-cache`
    - Restart bench: `bench restart`
