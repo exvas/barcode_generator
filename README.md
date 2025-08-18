@@ -5,12 +5,15 @@ A powerful Frappe app for generating bulk barcodes with customizable layouts, th
 ## ✨ Features
 
 - **Multiple Barcode Types**: Support for Code128, Code39, EAN13, EAN8, UPC-A, ITF, DataMatrix, and PDF417
-- **Bulk Generation**: Generate hundreds of barcodes from a simple text input
+- **Bulk Generation**: Generate hundreds of barcodes from text input or file uploads
+- **File Upload Support**: Upload CSV/Excel files with automatic data processing
+- **Template Download**: Get sample CSV templates for easy data formatting
 - **Thermal Label Support**: Optimized for 50x25mm thermal printers (TA-P05 compatible)
 - **High-Density Layouts**: **Optimized spacing for A4, A5, Letter, Legal** - fit maximum 5+ rows per page
 - **Customizable Layout**: Configure codes per row, dimensions, and text inclusion
 - **Multiple Page Sizes**: A4, Letter, A3, A5, Legal, and 50x25mm thermal labels
 - **Item Name Support**: Display item names above barcodes with customizable fonts
+- **Smart Preview**: Enhanced preview with intelligent format detection
 - **Auto PDF Generation**: Generates organized PDF files ready for printing
 - **Status Tracking**: Monitor generation progress and completion
 - **Role-based Permissions**: System Manager, Barcode Manager, and Barcode User roles
@@ -18,24 +21,45 @@ A powerful Frappe app for generating bulk barcodes with customizable layouts, th
 
 ## 📦 Requirements
 
-**Manual Installation Required** - Install these packages manually for better control:
+**Dependencies Installation** - These packages are required for full functionality:
 
+**Core Barcode Libraries:**
 ```bash
 pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2
 ```
 
+**File Upload Support (CSV/Excel):**
+```bash
+pip install pandas>=1.3.0 openpyxl>=3.0.0
+```
+
 ## 🚀 Installation
 
-### Recommended Method: Manual Dependencies
+### Quick Installation (Recommended)
 
 ```bash
-# Step 1: Install Python dependencies
-pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2
-
-# Step 2: Install the app
+# Step 1: Get the app
 cd $PATH_TO_YOUR_BENCH
 bench get-app https://github.com/exvas/barcode_generator.git
-bench install-app barcode_generator
+
+# Step 2: Install dependencies
+pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
+
+# Step 3: Install the app
+bench --site YOUR_SITE_NAME install-app barcode_generator
+
+# Step 4: Migrate database
+bench --site YOUR_SITE_NAME migrate
+```
+
+### Alternative: Bench Environment Installation
+
+```bash
+# Install in bench virtual environment
+cd $PATH_TO_YOUR_BENCH
+source env/bin/activate
+pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
+bench --site YOUR_SITE_NAME install-app barcode_generator
 ```
 
 ## 🏷️ Thermal Label Printing
@@ -67,26 +91,62 @@ COUPLING,0010251282
 
 ## 📝 Usage
 
-### Standard Paper Printing (A4, A5, Letter, Legal) - **NEW OPTIMIZED**
+### Upload CSV/Excel Files (Recommended)
 
-**Perfect for high-density barcode printing - Maximum 5+ rows per page!**
+**Perfect for bulk barcode generation with organized data!**
 
 1. **Navigate to Barcode Generator**
    - Go to `Modules > Barcode Generator > Bulk Barcode Generator`
 
-2. **Create a New Session**
+2. **Download Template** 
+   - Click "Download Template" to get the sample CSV format
+   - Template includes proper headers: "Item Name", "Barcode Number"
+
+3. **Prepare Your Data**
+   - Fill the CSV with your items following the format:
+   ```csv
+   Item Name,Barcode Number
+   1/2 PIPE CPVC NIPRO,01192202500024
+   3/4 ELBOW CPVC,01192202500025
+   TEE JOINT CPVC,01192202500026
+   ```
+
+4. **Upload and Generate**
+   - Upload your CSV/Excel file using "Upload CSV/Excel File"
+   - Choose your barcode settings (Code128, page size, etc.)
+   - Click "Preview Codes" to verify data
+   - Click "Generate PDF" to create your barcodes
+
+### Manual Input (Alternative)
+
+**For quick barcode generation without files:**
+
+### Standard Paper Printing (A4, A5, Letter, Legal) - **OPTIMIZED**
+
+**Perfect for high-density barcode printing - Maximum 5+ rows per page!**
+
+1. **Create a New Session**
    - Set a meaningful session name
    - Choose your barcode type (Code128 recommended)
    - Select page size (A4, A5, Letter, or Legal)
 
-3. **Input Your Data**
-   - Enter codes/numbers, one per line
-   - Configure layout (codes per row: 3 recommended)
-   - Set font size for item names (24pt optimized for readability)
+2. **Input Your Data** (Choose one method)
+   - **Upload File**: Use CSV/Excel with "Item Name,Barcode Number" format
+   - **Manual Entry**: Enter codes directly with supported formats:
+     - `Item Name,Barcode Number` (CSV format)
+     - `Item Name | Barcode Number` (Pipe separated)
+     - `Item Name  Barcode Number` (Space separated)
+     - `Barcode Number` (Just barcode)
+
+3. **Configure Layout**
+   - Codes per row: 3 recommended for optimal density
+   - Font size: 24pt optimized for readability
+   - Include text below barcode: ✅ Enabled
 
 4. **Generate PDF**
-   - Click "Save" to process
-   - Download the generated PDF from the "Generated PDF" field
+   - Click "Preview Codes" to verify format
+   - Click "Generate PDF" to create barcodes
+   - Download the generated PDF
 
 **🎯 A4/Letter Optimization Results:**
 - **Reduced margins**: 15mm instead of 20mm for more space
@@ -103,6 +163,12 @@ COUPLING,0010251282
    - Font Size: `12 pt`
 
 2. **Input Data with Item Names**
+   
+   **Option 1: Upload CSV/Excel File**
+   - Download template and fill with your data
+   - Upload using "Upload CSV/Excel File" field
+   
+   **Option 2: Manual Entry**
    ```
    Product A,0010251279
    Product B,0010251280
@@ -157,7 +223,20 @@ Generate barcodes programmatically:
 ```python
 import frappe
 
-# Standard A4 barcodes - NEW OPTIMIZED LAYOUT
+# Upload CSV file method (Recommended)
+doc = frappe.get_doc({
+    "doctype": "Bulk Barcode Generator",
+    "title": "CSV Upload Session",
+    "upload_file": "/files/my_barcode_data.csv",  # Path to uploaded CSV
+    "barcode_type": "Code128",
+    "page_size": "A4",
+    "codes_per_row": 3,
+    "barcode_width": 35,
+    "barcode_height": 15,
+    "item_name_font_size": 24
+})
+
+# Manual input method  
 doc = frappe.get_doc({
     "doctype": "Bulk Barcode Generator",
     "title": "A4 High-Density Session",
@@ -165,8 +244,8 @@ doc = frappe.get_doc({
     "barcode_type": "Code128",
     "page_size": "A4",
     "codes_per_row": 3,
-    "barcode_width": 35,  # Optimized width
-    "barcode_height": 15,  # Optimized height  
+    "barcode_width": 35,
+    "barcode_height": 15,  
     "item_name_font_size": 24
 })
 
@@ -184,10 +263,10 @@ thermal_doc = frappe.get_doc({
 })
 
 doc.insert()
-doc.generate_pdf()
+doc.save()  # This processes uploaded file if provided
 
-# Get the generated PDF
-pdf_url = doc.generated_pdf
+# Generate PDF
+pdf_url = doc.create_pdf()
 ```
 
 ## 🔐 Permissions
@@ -203,15 +282,30 @@ The app includes three permission levels:
 ### Common Issues
 
 1. **Import Error: No module named 'reportlab'**
-   - Install dependencies manually for better control:
+   - Install dependencies for your environment:
    ```bash
-   pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2
+   pip install reportlab>=4.0.4 python-barcode>=0.15.1 Pillow>=10.2.0 qrcode>=7.4.2 pandas>=1.3.0 openpyxl>=3.0.0
    ```
 
-2. **PDF Generation Failed**
+2. **File Upload Not Working**
+   - Ensure pandas and openpyxl are installed: `pip install pandas>=1.3.0 openpyxl>=3.0.0`
+   - Check file format: Use CSV or Excel (.xlsx, .xls)
+   - Verify file has proper headers: "Item Name", "Barcode Number"
+
+3. **AttributeError: object has no attribute 'upload_file'**
+   - Run database migration: `bench --site YOUR_SITE migrate`
+   - Clear cache: `bench --site YOUR_SITE clear-cache`
+   - Restart bench: `bench restart`
+
+4. **PDF Generation Failed**
    - Check that input data contains valid codes
    - Ensure barcode type matches your data format
    - Verify sufficient disk space for PDF generation
+
+5. **Template Download Issues**
+   - Check if download_template API method is accessible
+   - Verify proper permissions for file downloads
+   - Try manual CSV creation if download fails
 
 3. **Thermal Label Issues**
    - Use format: `ItemName,BarcodeNumber`
@@ -308,25 +402,45 @@ For issues and questions:
 
 ## 🎯 Quick Start Examples
 
-### A4 Paper Labels - **HIGH DENSITY OPTIMIZED**
-```
-Input: Product A,12345
-       Product B,67890  
-       Product C,11111
+### CSV Upload Method (Recommended)
+```csv
+# Download template, fill with your data:
+Item Name,Barcode Number
+Product A,12345
+Product B,67890
+Product C,11111
+
+# Upload file → Preview → Generate PDF
 Settings: A4, 35mm x 15mm, 24pt font, 3 per row
-Result: 5+ rows per page, minimal spacing, maximum barcodes
+Result: Professional barcodes with item names, 5+ rows per page
+```
+
+### Manual Entry Method
+```
+# Multiple format support:
+Input: Product A,12345
+       Product B | 67890  
+       Product C  11111
+       22222
+Settings: A4, 35mm x 15mm, 24pt font, 3 per row
+Result: Smart parsing, 5+ rows per page, minimal spacing
 ```
 
 ### A5/Letter Labels - **SPACE OPTIMIZED**  
 ```
-Input: Item1,11111\nItem2,22222\nItem3,33333
+# For smaller paper sizes:
+Input: Upload CSV or manual entry
 Settings: A5, 35mm x 15mm, 22pt font, 3 per row
 Result: 4+ rows per page with professional appearance
 ```
 
-### Thermal Labels (TA-P05) - **UNCHANGED PERFECT**
-```
-Input: 1/2 ELBOW CPVC,0010251279
+### Thermal Labels (TA-P05) - **PERFECT FOR THERMAL PRINTING**
+```csv
+# Thermal-optimized format:
+Item Name,Barcode Number
+1/2 ELBOW CPVC,0010251279
+TEE JOINT,0010251280
+
 Settings: 50x25mm Label, 38mm x 8mm, 12pt font
-Result: Perfect thermal labels for TA-P05 printer, consecutive printing
+Result: Perfect thermal labels, consecutive printing
 ```

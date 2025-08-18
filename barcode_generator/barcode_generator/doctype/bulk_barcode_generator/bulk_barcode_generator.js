@@ -32,6 +32,24 @@ frappe.ui.form.on('Bulk Barcode Generator', {
         update_code_count(frm);
     },
     
+    download_template: function(frm) {
+        // Handle template download
+        window.open('/api/method/barcode_generator.barcode_generator.doctype.bulk_barcode_generator.bulk_barcode_generator.download_template', '_blank');
+    },
+    
+    upload_file: function(frm) {
+        // When file is uploaded, process it
+        if (frm.doc.upload_file) {
+            frm.save().then(() => {
+                frm.reload_doc();
+                frappe.show_alert({
+                    message: __('File processed successfully!'),
+                    indicator: 'green'
+                });
+            });
+        }
+    },
+    
     input_data: function(frm) {
         // Update code count when input data changes
         update_code_count(frm);
@@ -59,8 +77,16 @@ function update_code_count(frm) {
 }
 
 function preview_input_codes(frm) {
+    let data_source = "";
+    
+    if (frm.doc.upload_file && frm.doc.input_data) {
+        data_source = "from uploaded file";
+    } else if (frm.doc.input_data) {
+        data_source = "from manual input";
+    }
+    
     if (!frm.doc.input_data) {
-        frappe.msgprint(__('Please enter some codes first'));
+        frappe.msgprint(__('Please upload a file or enter some codes manually first'));
         return;
     }
     
@@ -74,11 +100,13 @@ function preview_input_codes(frm) {
                 let codes = r.message.codes;
                 let total = r.message.total_count;
                 let has_more = r.message.has_more;
+                let format_info = r.message.format_info || "";
                 
                 let html = `
                     <div style="max-height: 400px; overflow-y: auto;">
-                        <h4>Preview (First 10 codes)</h4>
+                        <h4>Preview (First 10 codes) ${data_source}</h4>
                         <p><strong>Total codes found: ${total}</strong></p>
+                        ${format_info ? `<p><em>${format_info}</em></p>` : ''}
                         <ol>
                 `;
                 

@@ -6,6 +6,7 @@ from frappe.utils import now_datetime, get_site_path
 import os
 import io
 import base64
+import csv
 from PIL import Image, ImageDraw, ImageFont
 import barcode
 from barcode.writer import ImageWriter
@@ -15,11 +16,22 @@ from reportlab.lib.units import mm
 import qrcode
 import re
 
+# Try to import pandas, fall back to basic CSV handling if not available
+try:
+    import pandas as pd
+    HAS_PANDAS = True
+except ImportError:
+    HAS_PANDAS = False
+
 class BulkBarcodeGenerator(Document):
     def validate(self):
         """Validate input data before saving"""
+        # Process upload file if provided
+        if self.upload_file and not self.input_data:
+            self.process_uploaded_file()
+        
         if not self.input_data:
-            frappe.throw("Input data is required")
+            frappe.throw("Input data is required. Either upload a file or enter data manually.")
         
         # Count total codes
         codes = self.parse_input_data()
@@ -31,8 +43,122 @@ class BulkBarcodeGenerator(Document):
         if self.total_codes > 1000:
             frappe.throw("Maximum 1000 codes allowed per batch")
 
+    def process_uploaded_file(self):
+        """Process uploaded CSV/Excel file and populate input_data"""
+        if not self.upload_file:
+            return
+        
+        try:
+            # Get the file
+            file_doc = frappe.get_doc("File", {"file_url": self.upload_file})
+            file_path = file_doc.get_full_path()
+            
+            # Read file based on extension
+            if file_path.endswith('.csv'):
+                if HAS_PANDAS:
+                    df = pd.read_csv(file_path)
+                    input_lines = self._process_dataframe(df)
+                else:
+                    # Fallback to basic CSV reading
+                    input_lines = self._process_csv_basic(file_path)
+            elif file_path.endswith(('.xlsx', '.xls')):
+                if HAS_PANDAS:
+                    df = pd.read_excel(file_path)
+                    input_lines = self._process_dataframe(df)
+                else:
+                    frappe.throw("Excel file support requires pandas. Please use CSV format or install pandas.")
+            else:
+                frappe.throw("Supported file formats: CSV, Excel (.xlsx, .xls)")
+            
+            # Set input_data
+            self.input_data = "\n".join(input_lines)
+            
+            if not input_lines:
+                frappe.throw("No valid data found in uploaded file")
+                
+        except Exception as e:
+            frappe.throw(f"Error processing uploaded file: {str(e)}")
+
+    def _process_dataframe(self, df):
+        """Process pandas DataFrame and return input lines"""
+        input_lines = []
+        
+        # Check if we have expected columns
+        if len(df.columns) >= 2:
+            # Use first two columns as Item Name and Barcode
+            item_col = df.columns[0]
+            barcode_col = df.columns[1]
+            
+            for _, row in df.iterrows():
+                item_name = str(row[item_col]).strip() if pd.notna(row[item_col]) else ""
+                barcode_num = str(row[barcode_col]).strip() if pd.notna(row[barcode_col]) else ""
+                
+                if barcode_num:  # Only add if barcode exists
+                    if item_name:
+                        input_lines.append(f"{item_name},{barcode_num}")
+                    else:
+                        input_lines.append(barcode_num)
+        
+        elif len(df.columns) == 1:
+            # Single column - treat as barcode numbers only
+            barcode_col = df.columns[0]
+            for _, row in df.iterrows():
+                barcode_num = str(row[barcode_col]).strip() if pd.notna(row[barcode_col]) else ""
+                if barcode_num:
+                    input_lines.append(barcode_num)
+        
+        else:
+            frappe.throw("File must contain at least one column")
+        
+        return input_lines
+
+    def _process_csv_basic(self, file_path):
+        """Process CSV file using basic csv module"""
+        input_lines = []
+        
+        with open(file_path, 'r', encoding='utf-8-sig') as csvfile:  # utf-8-sig to handle BOM
+            # Try to detect delimiter
+            sample = csvfile.read(1024)
+            csvfile.seek(0)
+            sniffer = csv.Sniffer()
+            delimiter = sniffer.sniff(sample).delimiter
+            
+            reader = csv.reader(csvfile, delimiter=delimiter)
+            
+            # Skip header if it exists
+            first_row = next(reader, None)
+            if first_row and (first_row[0].lower().strip() in ['item', 'product', 'name', 'item name']):
+                # Skip header row
+                pass
+            else:
+                # Process first row as data
+                if first_row:
+                    csvfile.seek(0)
+                    reader = csv.reader(csvfile, delimiter=delimiter)
+            
+            for row in reader:
+                if not row:
+                    continue
+                    
+                # Clean row data
+                clean_row = [cell.strip() for cell in row if cell.strip()]
+                
+                if len(clean_row) >= 2:
+                    # Two columns: Item Name, Barcode
+                    item_name = clean_row[0]
+                    barcode_num = clean_row[1]
+                    if barcode_num:
+                        input_lines.append(f"{item_name},{barcode_num}")
+                elif len(clean_row) == 1:
+                    # Single column: Just barcode
+                    barcode_num = clean_row[0]
+                    if barcode_num:
+                        input_lines.append(barcode_num)
+        
+        return input_lines
+
     def parse_input_data(self):
-        """Parse input data and return list of (item_name, barcode) tuples"""
+        """Parse input data and return list of (item_name, barcode) tuples with improved handling"""
         if not self.input_data:
             return []
         
@@ -42,10 +168,11 @@ class BulkBarcodeGenerator(Document):
             if not line:  # Skip empty lines
                 continue
                 
-            # Try to parse different formats:
+            # Try to parse different formats with improved logic:
             # Format 1: "Item Name,Barcode" or "Item Name\tBarcode"
             # Format 2: "Item Name | Barcode"  
             # Format 3: Just "Barcode" (no item name)
+            # Format 4: "Item Name Barcode" (space separated)
             
             if ',' in line:
                 # CSV format: Item Name,Barcode
@@ -55,8 +182,10 @@ class BulkBarcodeGenerator(Document):
                     barcode_num = parts[1].strip()
                     codes.append((item_name, barcode_num))
                 else:
-                    # Just barcode
-                    codes.append(("", line.strip()))
+                    # Just barcode with comma artifacts
+                    clean_line = line.replace(',', '').strip()
+                    if clean_line:
+                        codes.append(("", clean_line))
                     
             elif '\t' in line:
                 # Tab-separated: Item Name\tBarcode
@@ -66,7 +195,9 @@ class BulkBarcodeGenerator(Document):
                     barcode_num = parts[1].strip()
                     codes.append((item_name, barcode_num))
                 else:
-                    codes.append(("", line.strip()))
+                    clean_line = line.replace('\t', '').strip()
+                    if clean_line:
+                        codes.append(("", clean_line))
                     
             elif '|' in line:
                 # Pipe-separated: Item Name | Barcode
@@ -76,10 +207,29 @@ class BulkBarcodeGenerator(Document):
                     barcode_num = parts[1].strip()
                     codes.append((item_name, barcode_num))
                 else:
-                    codes.append(("", line.strip()))
+                    clean_line = line.replace('|', '').strip()
+                    if clean_line:
+                        codes.append(("", clean_line))
             else:
-                # Just barcode number
-                codes.append(("", line.strip()))
+                # Plain text - could be just barcode or "Item Name Barcode"
+                clean_line = line.strip()
+                if clean_line:
+                    # Check if it contains multiple words and last word looks like a barcode
+                    words = clean_line.split()
+                    if len(words) >= 2:
+                        # Check if last word looks like a barcode (alphanumeric, possibly with special chars)
+                        last_word = words[-1]
+                        if re.match(r'^[A-Za-z0-9\-_\.]+$', last_word) and len(last_word) >= 4:
+                            # Treat last word as barcode, rest as item name
+                            item_name = ' '.join(words[:-1])
+                            barcode_num = last_word
+                            codes.append((item_name, barcode_num))
+                        else:
+                            # Treat entire line as barcode
+                            codes.append(("", clean_line))
+                    else:
+                        # Single word - treat as barcode number
+                        codes.append(("", clean_line))
         
         # Remove duplicates while preserving order
         seen = set()
@@ -532,7 +682,7 @@ def generate_pdf(doc_name):
 
 @frappe.whitelist()
 def preview_codes(input_data):
-    """Preview first few codes from input data"""
+    """Preview first few codes from input data with improved parsing"""
     try:
         codes = []
         for line in input_data.split('\n'):
@@ -540,36 +690,118 @@ def preview_codes(input_data):
             if not line:
                 continue
                 
+            # More flexible parsing to handle different formats
             if ',' in line:
+                # CSV format: Item Name,Barcode
                 parts = line.split(',', 1)
                 if len(parts) == 2:
-                    codes.append(f"{parts[0].strip()} → {parts[1].strip()}")
+                    item_name = parts[0].strip()
+                    barcode_num = parts[1].strip()
+                    if item_name and barcode_num:
+                        codes.append(f"{item_name} → {barcode_num}")
+                    elif barcode_num:
+                        codes.append(f"(No Item Name) → {barcode_num}")
+                    else:
+                        codes.append(f"(Invalid Entry) → {line}")
                 else:
-                    codes.append(line)
+                    # Single value in CSV format line
+                    clean_line = line.replace(',', '').strip()
+                    if clean_line:
+                        codes.append(f"(No Item Name) → {clean_line}")
+                        
             elif '\t' in line:
+                # Tab-separated: Item Name\tBarcode
                 parts = line.split('\t', 1)
                 if len(parts) == 2:
-                    codes.append(f"{parts[0].strip()} → {parts[1].strip()}")
+                    item_name = parts[0].strip()
+                    barcode_num = parts[1].strip()
+                    if item_name and barcode_num:
+                        codes.append(f"{item_name} → {barcode_num}")
+                    elif barcode_num:
+                        codes.append(f"(No Item Name) → {barcode_num}")
+                    else:
+                        codes.append(f"(Invalid Entry) → {line}")
                 else:
-                    codes.append(line)
+                    clean_line = line.replace('\t', '').strip()
+                    if clean_line:
+                        codes.append(f"(No Item Name) → {clean_line}")
+                        
             elif '|' in line:
+                # Pipe-separated: Item Name | Barcode
                 parts = line.split('|', 1)
                 if len(parts) == 2:
-                    codes.append(f"{parts[0].strip()} → {parts[1].strip()}")
+                    item_name = parts[0].strip()
+                    barcode_num = parts[1].strip()
+                    if item_name and barcode_num:
+                        codes.append(f"{item_name} → {barcode_num}")
+                    elif barcode_num:
+                        codes.append(f"(No Item Name) → {barcode_num}")
+                    else:
+                        codes.append(f"(Invalid Entry) → {line}")
                 else:
-                    codes.append(line)
+                    clean_line = line.replace('|', '').strip()
+                    if clean_line:
+                        codes.append(f"(No Item Name) → {clean_line}")
             else:
-                codes.append(f"(No Item Name) → {line}")
+                # Plain barcode number or unrecognized format
+                clean_line = line.strip()
+                if clean_line:
+                    # Check if it looks like a valid barcode (numbers, letters, some special chars)
+                    if re.match(r'^[A-Za-z0-9\-_\.]+$', clean_line):
+                        codes.append(f"(No Item Name) → {clean_line}")
+                    else:
+                        # If it contains spaces, treat first part as item name, rest as barcode
+                        parts = clean_line.split(' ', 1)
+                        if len(parts) == 2 and re.match(r'^[A-Za-z0-9\-_\.]+$', parts[1].replace(' ', '')):
+                            codes.append(f"{parts[0]} → {parts[1]}")
+                        else:
+                            codes.append(f"(No Item Name) → {clean_line}")
         
         # Return first 10 codes for preview
         return {
             "success": True,
             "codes": codes[:10],
             "total_count": len(codes),
-            "has_more": len(codes) > 10
+            "has_more": len(codes) > 10,
+            "format_info": "Supported formats: 'Item Name,Barcode' or 'Item Name | Barcode' or just 'Barcode'"
         }
     except Exception as e:
         return {
             "success": False,
             "message": str(e)
         }
+
+@frappe.whitelist()
+def download_template():
+    """Generate and download a sample CSV template"""
+    try:
+        # Create sample data
+        sample_data = [
+            ["Item Name", "Barcode Number"],
+            ["1/2 PIPE CPVC NIPRO", "01192202500024"],
+            ["3/4 ELBOW CPVC", "01192202500025"],
+            ["TEE JOINT CPVC", "01192202500026"],
+            ["COUPLING CPVC", "01192202500027"],
+            ["VALVE BALL 1/2", "01192202500028"]
+        ]
+        
+        # Create CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(sample_data)
+        
+        # Convert to bytes
+        csv_content = output.getvalue().encode('utf-8')
+        
+        # Create file
+        frappe.local.response.filename = "barcode_template.csv"
+        frappe.local.response.filecontent = csv_content
+        frappe.local.response.type = "download"
+        
+        return {
+            "success": True,
+            "message": "Template downloaded successfully"
+        }
+        
+    except Exception as e:
+        frappe.throw(f"Error generating template: {str(e)}")

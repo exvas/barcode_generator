@@ -12,6 +12,10 @@
   "column_break_1",
   "naming_series",
   "section_break_2",
+  "upload_file",
+  "column_break_upload",
+  "download_template",
+  "section_break_input",
   "input_data",
   "section_break_3",
   "barcode_type",
@@ -61,11 +65,32 @@
    "label": "Input Data"
   },
   {
-   "description": "Enter each code or number on a separate line",
+   "fieldname": "upload_file",
+   "fieldtype": "Attach",
+   "label": "Upload CSV/Excel File",
+   "description": "Upload a CSV or Excel file with Item Name and Barcode columns"
+  },
+  {
+   "fieldname": "column_break_upload",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "download_template",
+   "fieldtype": "Button",
+   "label": "Download Template",
+   "description": "Download a sample CSV template"
+  },
+  {
+   "fieldname": "section_break_input",
+   "fieldtype": "Section Break",
+   "label": "Manual Input (Alternative)"
+  },
+  {
+   "description": "Enter codes manually (one per line) or use format: Item Name,Barcode Number",
    "fieldname": "input_data",
    "fieldtype": "Long Text",
    "label": "Codes/Numbers (One per line)",
-   "reqd": 1
+   "depends_on": "eval:!doc.upload_file"
   },
   {
    "fieldname": "section_break_3",
@@ -200,7 +225,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-15 12:44:30.300125",
+ "modified": "2025-08-18 12:44:30.300125",
  "modified_by": "Administrator",
  "module": "Barcode Generator",
  "name": "Bulk Barcode Generator",
