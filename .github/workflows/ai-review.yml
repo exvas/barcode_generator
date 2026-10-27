@@ -1,0 +1,31 @@
+name: ai-review
+
+# crenya ai reviews every PR from this repository (never from a fork: no secrets there, and the review
+# runs on our box). The reviewer (crenya-ai-review on crenya-ci) comments on the PR and sets the commit
+# status "crenya ai review": success = no HIGH finding. copilot's auto-merge reads that status.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # drafts are reviewed too: a skipped run left on a head would read as "not green" to auto-merge
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, crenya-ci]
+    timeout-minutes: 10
+    steps:
+      - name: Review
+        env:
+          CRENYA_AI_TOKEN: ${{ secrets.CRENYA_AI_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}   # data, never pasted into the shell line
+        run: crenya-ai-review --github --pr "$PR"
