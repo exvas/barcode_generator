@@ -385,27 +385,27 @@ class BulkBarcodeGenerator(Document):
 				try:
 					# Try common system font paths
 					item_font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", font_size)
-				except:
+				except Exception:
 					try:
 						# Linux font path
 						item_font = ImageFont.truetype(
 							"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size
 						)
-					except:
+					except Exception:
 						try:
 							# Windows font path
 							item_font = ImageFont.truetype("arial.ttf", font_size)
-						except:
+						except Exception:
 							try:
 								# Alternative Linux fonts
 								item_font = ImageFont.truetype(
 									"/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
 									font_size,
 								)
-							except:
+							except Exception:
 								# Fallback to default
 								item_font = ImageFont.load_default()
-			except:
+			except Exception:
 				item_font = None
 
 			# Add item name at the top
@@ -451,7 +451,7 @@ class BulkBarcodeGenerator(Document):
 			# Try to use a font, fallback to default
 			try:
 				font = ImageFont.load_default()
-			except:
+			except Exception:
 				font = None
 
 			# Calculate text position (centered)
@@ -468,7 +468,7 @@ class BulkBarcodeGenerator(Document):
 			draw.text((text_x, text_y), text, fill="black", font=font)
 
 			return new_img
-		except:
+		except Exception:
 			return img
 
 	def create_error_image(self, code_text, error_msg):
@@ -479,7 +479,7 @@ class BulkBarcodeGenerator(Document):
 
 		try:
 			font = ImageFont.load_default()
-		except:
+		except Exception:
 			font = None
 
 		draw.text((10, 10), f"Error: {code_text}"[:20], fill="red", font=font)
@@ -568,7 +568,7 @@ class BulkBarcodeGenerator(Document):
 
 				codes_per_page = int(available_height / y_spacing) * codes_per_row
 
-			for i, (item_name, barcode_num, img) in enumerate(barcode_images):
+			for i, (item_name, barcode_num, img) in enumerate(barcode_images):  # noqa: B007
 				# Check if we need a new page
 				if self.page_size == "50x25mm Label":
 					# For thermal labels - each label gets its own page
@@ -585,7 +585,7 @@ class BulkBarcodeGenerator(Document):
 
 					# Position barcode in upper portion to leave space for text
 					available_height = page_height - (2 * mm)  # Leave margins
-					barcode_space = barcode_height
+					barcode_space = barcode_height  # noqa: F841
 					text_space = max(6 * mm, (self.item_name_font_size or 12) * 0.5 * mm)
 
 					# Position barcode from top, leaving space for text below

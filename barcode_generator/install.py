@@ -32,7 +32,7 @@ def install_dependencies():
 				print(f"📦 Installing {package}...")
 
 				# Use subprocess to install each package
-				result = subprocess.run(
+				result = subprocess.run(  # noqa: F841
 					[python_executable, "-m", "pip", "install", package],
 					check=True,
 					capture_output=True,
