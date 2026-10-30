@@ -1,7 +1,8 @@
-import frappe
+import os
 import subprocess
 import sys
-import os
+
+import frappe
 
 
 def get_requirements():
@@ -45,7 +46,7 @@ def install_dependencies():
 				print(f"Error: {e.stderr}")
 				continue
 			except Exception as e:
-				print(f"⚠️  Warning: Unexpected error installing {package}: {str(e)}")
+				print(f"⚠️  Warning: Unexpected error installing {package}: {e!s}")
 				continue
 
 		# Verify installations
@@ -55,7 +56,7 @@ def install_dependencies():
 		print("✅ Barcode Generator dependencies installation completed!")
 
 	except Exception as e:
-		print(f"❌ Error during dependency installation: {str(e)}")
+		print(f"❌ Error during dependency installation: {e!s}")
 		# Don't fail the app installation if dependencies fail
 		print("💡 You can manually install dependencies using:")
 		print(

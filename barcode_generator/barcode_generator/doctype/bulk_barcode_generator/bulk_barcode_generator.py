@@ -1,20 +1,21 @@
 # Enhanced version of bulk_barcode_generator.py to support item names
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import now_datetime, get_site_path
-import os
-import io
 import base64
 import csv
-from PIL import Image, ImageDraw, ImageFont
-import barcode
-from barcode.writer import ImageWriter
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4, letter, A3, A5, legal
-from reportlab.lib.units import mm
-import qrcode
+import io
+import os
 import re
+
+import barcode
+import frappe
+import qrcode
+from barcode.writer import ImageWriter
+from frappe.model.document import Document
+from frappe.utils import get_site_path, now_datetime
+from PIL import Image, ImageDraw, ImageFont
+from reportlab.lib.pagesizes import A3, A4, A5, legal, letter
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
 
 # Try to import pandas, fall back to basic CSV handling if not available
 try:
@@ -81,7 +82,7 @@ class BulkBarcodeGenerator(Document):
 				frappe.throw("No valid data found in uploaded file")
 
 		except Exception as e:
-			frappe.throw(f"Error processing uploaded file: {str(e)}")
+			frappe.throw(f"Error processing uploaded file: {e!s}")
 
 	def _process_dataframe(self, df):
 		"""Process pandas DataFrame and return input lines"""
@@ -120,7 +121,7 @@ class BulkBarcodeGenerator(Document):
 		"""Process CSV file using basic csv module"""
 		input_lines = []
 
-		with open(file_path, "r", encoding="utf-8-sig") as csvfile:  # utf-8-sig to handle BOM
+		with open(file_path, encoding="utf-8-sig") as csvfile:  # utf-8-sig to handle BOM
 			# Try to detect delimiter
 			sample = csvfile.read(1024)
 			csvfile.seek(0)
@@ -346,7 +347,7 @@ class BulkBarcodeGenerator(Document):
 				return img
 
 		except Exception as e:
-			frappe.log_error(f"Error generating barcode for {code_text}: {str(e)}")
+			frappe.log_error(f"Error generating barcode for {code_text}: {e!s}")
 			# Return a placeholder image
 			return self.create_error_image(code_text, str(e))
 
@@ -431,7 +432,7 @@ class BulkBarcodeGenerator(Document):
 
 			return new_img
 		except Exception as e:
-			frappe.log_error(f"Error adding text to image: {str(e)}")
+			frappe.log_error(f"Error adding text to image: {e!s}")
 			return img
 
 	def add_text_to_image(self, img, text):
@@ -623,7 +624,7 @@ class BulkBarcodeGenerator(Document):
 					c.setStrokeColor("red")
 					c.rect(x, y, barcode_width, item_height)
 					c.drawString(x + 5, y + (item_height / 2), f"Error: {barcode_num}")
-					frappe.log_error(f"Image drawing error for {barcode_num}: {str(img_error)}")
+					frappe.log_error(f"Image drawing error for {barcode_num}: {img_error!s}")
 
 				# Update progress
 				if i % 20 == 0:
@@ -669,8 +670,8 @@ class BulkBarcodeGenerator(Document):
 		except Exception as e:
 			self.generation_status = "Failed"
 			self.save()
-			frappe.log_error(f"PDF generation failed: {str(e)}")
-			frappe.throw(f"Failed to generate PDF: {str(e)}")
+			frappe.log_error(f"PDF generation failed: {e!s}")
+			frappe.throw(f"Failed to generate PDF: {e!s}")
 
 
 # API Methods remain the same...
@@ -685,7 +686,7 @@ def generate_pdf(doc_name):
 		file_url = doc.create_pdf()
 		return {"success": True, "file_url": file_url, "message": "PDF generated successfully"}
 	except Exception as e:
-		frappe.log_error(f"API generate_pdf failed: {str(e)}")
+		frappe.log_error(f"API generate_pdf failed: {e!s}")
 		return {"success": False, "message": str(e)}
 
 
@@ -808,4 +809,4 @@ def download_template():
 		return {"success": True, "message": "Template downloaded successfully"}
 
 	except Exception as e:
-		frappe.throw(f"Error generating template: {str(e)}")
+		frappe.throw(f"Error generating template: {e!s}")

@@ -6,10 +6,10 @@ def execute():
 	try:
 		# Update the DocField directly using SQL to avoid parsing issues
 		frappe.db.sql("""
-            UPDATE `tabDocField` 
+            UPDATE `tabDocField`
             SET `options` = 'A4\nLetter\nA3\nA5\nLegal\n50x25mm Label',
                 `description` = 'Choose 50x25mm Label for thermal label printers'
-            WHERE `parent` = 'Bulk Barcode Generator' 
+            WHERE `parent` = 'Bulk Barcode Generator'
             AND `fieldname` = 'page_size'
         """)
 
