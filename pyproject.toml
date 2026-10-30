@@ -37,6 +37,11 @@ select = [
     "RUF",
 ]
 ignore = [
+    "UP032", # .format() -> f-string: Frappe's semgrep rules flag f-strings in frappe.db.sql
+    "RUF001", # ambiguous unicode in strings (an en dash, a no-break space, an emoji) is meant
+    "RUF003", # ambiguous unicode in comments is meant
+    "RUF013", # implicit Optional: changing a whitelisted signature changes Frappe's argument checks
+    "UP035", # typing.Dict/List imports still work; rewriting them is churn
     "B017", # assertRaises(Exception) - should be more specific
     "B018", # useless expression, not assigned to anything
     "B023", # function doesn't bind loop variable - will have last iteration's value
