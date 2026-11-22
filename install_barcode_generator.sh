@@ -69,7 +69,7 @@ PACKAGES=(
 for package in "${PACKAGES[@]}"; do
     package_name=$(echo "$package" | cut -d'>' -f1 | cut -d'=' -f1)
     print_status "Installing $package_name..."
-    
+
     if pip install "$package"; then
         print_success "$package_name installed successfully"
     else

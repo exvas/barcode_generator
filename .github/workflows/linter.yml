@@ -29,10 +29,27 @@ jobs:
       - name: Download Semgrep rules
         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
 
-      - name: Run Semgrep rules
+      - name: Run Semgrep rules (new findings only)
+        # semgrep ci matches findings by code text, so a reformat makes every old finding look new: compare
+        # counts per rule and file with the base instead; only an increase fails
         run: |
-          pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+          pip install -q semgrep
+          git fetch -q --depth 1 origin "${{ github.event.pull_request.base.sha }}"
+          git worktree add -q "$RUNNER_TEMP/base" FETCH_HEAD
+          rules=(--config "$GITHUB_WORKSPACE/frappe-semgrep-rules/rules" --config r/python.lang.correctness)
+          (cd "$RUNNER_TEMP/base" && semgrep scan --metrics=off --quiet "${rules[@]}" --json . > "$RUNNER_TEMP/base.json")
+          semgrep scan --metrics=off --quiet --exclude frappe-semgrep-rules "${rules[@]}" --json . > "$RUNNER_TEMP/head.json"
+          python3 - "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" <<'PY'
+          import collections, json, sys
+          # a rule's check_id starts with its config path as seen from the scan's folder, which differs between the
+          # two scans: compare by the rule's own name
+          base, head = (collections.Counter((r["check_id"].split(".")[-1], r["path"]) for r in json.load(open(f))["results"]) for f in sys.argv[1:])
+          new = {k: n - base[k] for k, n in head.items() if n > base[k]}
+          for (rule, path), n in sorted(new.items()):
+              print(f"::error file={path}::{n} new {rule}")
+          print(f"{sum(head.values())} findings, {sum(base.values())} on the base, {sum(new.values())} new")
+          sys.exit(1 if new else 0)
+          PY
 
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'
@@ -46,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
